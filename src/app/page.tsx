@@ -1,95 +1,89 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
+import MarketCard from "@/components/MarketCard";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [markets, setMarkets] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+
+    if (userId) {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      setProfile(profileData);
+    }
+
+    const { data: marketsData } = await supabase
+      .from('markets')
+      .select('*')
+      .eq('status', 'open')
+      .order('created_at', { ascending: false });
+
+    if (marketsData) setMarkets(marketsData);
+    setLoading(false);
+  };
+
+  if (loading) {
+    return <div style={{ textAlign: 'center', marginTop: '4rem' }}>Loading markets...</div>;
+  }
+
+  return (
+    <div>
+      <div style={{ textAlign: 'center', marginBottom: '4rem', marginTop: '2rem' }}>
+        <h1 className="animate-fade-in">Predict the Future of Naija</h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1.2rem', maxWidth: '600px', margin: '0 auto' }}>
+          Use your points to predict outcomes on politics, sports, and pop culture in Nigeria. Parimutuel odds adjust dynamically!
+        </p>
+      </div>
+
+      {!profile && (
+        <div style={{ 
+          background: 'rgba(99, 102, 241, 0.1)', 
+          border: '1px solid rgba(99, 102, 241, 0.3)', 
+          padding: '1.5rem', 
+          borderRadius: '12px',
+          textAlign: 'center',
+          marginBottom: '3rem'
+        }}>
+          <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-main)' }}>Sign in to start predicting!</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>You&apos;ll get 10 free points upon signup.</p>
         </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      )}
+
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
+        gap: '2rem' 
+      }}>
+        {markets.map((market) => (
+          <MarketCard 
+            key={market.id} 
+            market={market} 
+            userPoints={profile ? Number(profile.points) : 0} 
           />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        ))}
+
+        {markets.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--text-muted)', padding: '4rem 0' }}>
+            No open markets currently available. Check back later!
+          </div>
+        )}
+      </div>
     </div>
   );
 }

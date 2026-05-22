@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { Client } = require('pg');
 
-const connectionString = 'postgresql://postgres:Ariketush2001#@db.molnlndmlrtbakdkelxn.supabase.co:5432/postgres';
+const connectionString = 'postgresql://postgres:Ariketush2001%23@db.molnlndmlrtbakdkelxn.supabase.co:5432/postgres';
 
 async function setup() {
   const client = new Client({
